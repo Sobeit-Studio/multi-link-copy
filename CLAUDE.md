@@ -4,75 +4,96 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Multi-Link Copy is a published Figma plugin (Community ID `1423324569458473026`, runs in Figma design and Dev Mode). The user selects frames or components, and the plugin copies one link per selected node to the clipboard, one per line, in layer-panel order (top layers first, nested layers included), ready to paste into a spreadsheet or document.
+Multi-Link Copy is a Figma plugin (Community ID `1423324569458473026`). It runs in Figma design only. Dev Mode was removed from the manifest because Dev Mode reports only one selected layer, so multi-link copy cannot work there. The user selects layers, and the plugin copies one link per selected node to the clipboard, one per line, in layer-panel order (top layers first, nested layers included), ready to paste into a spreadsheet or document.
 
-Listing: https://www.figma.com/community/plugin/1423324569458473026/multi-link-copy (published Version 3, October 3, 2024). The listing is JS-rendered and returns 403 to plain HTTP fetches; read it through a browser.
+Listing: https://www.figma.com/community/plugin/1423324569458473026/multi-link-copy (the listing is JS-rendered and returns 403 to plain HTTP fetches; read it through a browser).
+
+Repository: https://github.com/Sobeit-Studio/multi-link-copy (private).
+
+The published Community version is still Version 3 from October 3, 2024. This redesign is not published yet.
 
 ## Commands
 
 ```bash
 npm install
-npm run build      # tsc: code.ts -> code.js
-npm run watch      # rebuild on change
-npm run lint       # eslint, including @figma/figma-plugins rules
+npm run build      # typecheck with tsc (no emit), then bundle src/code.ts to code.js with esbuild
+npm run watch      # esbuild rebuild on change (no typecheck)
+npm run lint       # eslint on src, including @figma/figma-plugins rules
 npm run lint:fix
+npm test           # Node's built-in test runner on test/**/*.test.ts
+node --test test/links.test.ts                                        # one test file
+node --test --test-name-pattern "<name>" test/links.test.ts           # one test by name
 ```
 
-There are no tests. `npm run lint` currently fails with one error (`no-inner-declarations` on `getAllNodes` in `code.ts`).
+Test output includes a `MODULE_TYPELESS_PACKAGE_JSON` warning. It is harmless.
 
-To run the plugin: Figma desktop app → Plugins → Development → Import plugin from manifest → pick `manifest.json`. Figma loads `code.js`, so build before testing. `code.js` is a gitignored build artifact; edit `code.ts` only.
-
-The folder is not a git repository yet.
+To run the plugin: Figma desktop app → Plugins → Development → Import plugin from manifest → pick `manifest.json`. Figma loads `code.js`, so build before testing. `code.js` is a gitignored build artifact; edit the files in `src/` only.
 
 ## Architecture
 
-Two files, two runtimes, talking only through `postMessage`:
+- `src/code.ts` runs in Figma's plugin sandbox. It has the `figma` API but no DOM and no clipboard.
+- `src/links.ts` holds the pure helpers: `parseFigmaUrl`, `fileSlug`, `fileUrl`, `nodeLink`, `compareIndexPaths`. It has no `figma` global. It is the only unit-tested code (`test/links.test.ts`).
+- `ui.html` runs in an iframe. It has the DOM and clipboard but no access to the document. It has three screens, `add-url`, `copy` and `settings`, and only one is visible at a time.
 
-- `code.ts` runs in Figma's plugin sandbox. It has the `figma` API (selection, page tree, `figma.notify`) but no DOM and no clipboard.
-- `ui.html` runs in an iframe. It has the DOM and clipboard but no access to the document. It is a single self-contained file (inline CSS and JS, no bundler).
+The two runtimes talk only through `postMessage`.
 
-Message protocol:
+| Direction | `type` | Fields | Purpose |
+| --- | --- | --- | --- |
+| UI → code | `ready` | | The UI has loaded. Code posts nothing before this. |
+| UI → code | `save-url` | `url` | Parse the pasted URL, store the key, show `copy`. |
+| UI → code | `copy` | | Build links for the current selection. |
+| UI → code | `copy-result` | `ok`, `count` | Result of the clipboard write; code shows the toast. |
+| UI → code | `open-settings` | | Show `settings`. |
+| UI → code | `close-settings` | | Show `copy`. |
+| UI → code | `delete-url` | | Clear the stored key and show `add-url`. |
+| UI → code | `resize` | `height` | Resize the window to the measured height. |
+| code → UI | `show` | `screen`, optional `fileUrl` | Show a screen. `fileUrl` is sent for `settings`. |
+| code → UI | `url-invalid` | | Show the invalid-URL error. |
+| code → UI | `write-clipboard` | `text`, `count` | UI writes `text` to the clipboard with a temporary textarea and `document.execCommand('copy')`. |
 
-| Direction | `type` | Purpose |
-| --- | --- | --- |
-| UI → code | `submit-url` (`url`) | User pasted the file URL; code extracts `fileKey` from it |
-| UI → code | `copy-links` | Build links for the current selection |
-| code → UI | `show-enter-url`, `show-select-nodes`, `show-copy-links` | Switch the visible `.state` panel |
-| code → UI | `copy-to-clipboard` (`text`) | UI writes the text to the clipboard via a temporary textarea and `document.execCommand('copy')` |
+Flow:
 
-Flow: the UI opens on the "enter URL" panel → `submit-url` → code validates the URL with a regex, stores `fileKey` in a module variable, switches to the "select nodes" panel → `copy-links` → code flattens the whole current page depth-first, filters that list down to the selected nodes (this is what gives layer-panel order), builds the URLs and sends them back for copying.
+- On start, code opens the window on `copy` if a key is stored, otherwise on `add-url`. Once the UI sends `ready`, code sends `show` for the same screen.
+- The file key is stored in document plugin data on `figma.root` under the key `file` as `{ key, name }`, where `name` is the file name at save time. When loading, a stored name that differs from the current file name counts as no key. This re-asks for the URL after a file is duplicated or renamed.
+- If `setPluginData` throws (view-only file), the key is kept in memory for the session instead. Delete clears only the in-memory key and attempts to clear the stored one.
+- `copy` with an empty selection shows a notification and does nothing else. With no key it shows `add-url`.
+- Links are ordered by sorting the selected nodes by index path. Figma's `children` runs back to front, so each index is counted from the end to make the top layer 0. Nothing walks the whole page.
+- Code sends `write-clipboard`. The UI writes it and answers with `copy-result`. The "Copied N links" toast appears only when `ok` is true; otherwise an error toast appears.
+- The UI measures the height of the visible screen and sends `resize` after each `show` and when the window width changes. Code keeps the width from `SCREEN_SIZE` and applies the reported height. `SCREEN_SIZE` holds only the initial sizes.
+- The window opens at the bottom right of the viewport (`bottomRightPosition`, converted from screen pixels to canvas units by zoom).
+
+Link format: `https://www.figma.com/design/<key>/<slug>?node-id=<id>`, with `:` in the node id replaced by `-` and the rest URI-encoded. `parseFigmaUrl` accepts `figma.com` with or without `www.`, path type `file`, `design` or `proto`, and uses the branch key for branch URLs.
 
 Why the URL step exists: `figma.fileKey` is only available to private plugins (`enablePrivatePluginApi`) and Figma-owned resources, so a public Community plugin cannot learn the file key by itself. Checked against the Plugin API docs on 2026-11-20; the docs name no alternative for public plugins.
 
-`manifest.json` declares `documentAccess: "dynamic-page"` (only the current page is loaded; cross-page node access must be async) and `networkAccess: none` (the listing advertises "No network access", so the UI cannot load remote assets).
+`manifest.json` declares `documentAccess: "dynamic-page"` (only the current page is loaded; cross-page node access must be async), `editorType: ["figma"]` and `networkAccess: none` (the listing advertises "No network access", so the UI cannot load remote assets).
 
 ## Figma platform facts (from developers.figma.com/docs/plugins, read 2026-11-20)
 
-- Dev Mode: `figma.currentPage.selection` returns only one node, the document is read-only, and the iframe fills the Inspect panel (design for a 300px minimum width). So multi-link copy cannot work from selection alone in Dev Mode, although the manifest lists `dev`.
+- Dev Mode: `figma.currentPage.selection` returns only one node, the document is read-only, and the iframe fills the Inspect panel.
 - Under `dynamic-page`, `figma.getNodeById` throws; use `getNodeByIdAsync`. Other pages need `page.loadAsync()` before reading `children`.
+- `showUI` `position` is in canvas space, the same space as node x/y. If the position is outside the viewport, Figma moves the window back inside it. The minimum window size is 70 x 0.
 - Updates to an already-approved plugin publish immediately with no further review. Keep the manifest `id` unchanged. Users cannot roll back; republish an earlier build to revert. Release notes go in the listing's Version history.
 - Dev loop: Plugins → Development → run the plugin; enable "Hot reload plugin" so a rebuild restarts it; Plugins → Development → Open Console (⌥⌘I) for logs.
-- The docs give no guidance on clipboard access from the iframe and no unit-testing guidance. Plain `tsc` is a supported build; bundlers are optional.
+- The docs give no guidance on clipboard access from the iframe and no unit-testing guidance.
 
 ## Things to know before editing
 
-- `ui.html` is about 234 KB because the header image is an inline base64 JPEG on a single line (around line 57). Never read or print the whole file; use `cut -c1-400 ui.html` or read specific line ranges, and keep edits away from that line.
-- `README.md` is cut off partway through the installation code block.
+- All colours in `ui.html` are tokens in the `:root` block, with dark values under `.figma-dark`. No hex value may appear anywhere else in the file.
+- The three icons are inlined SVGs from the design, with colour set to `currentColor`.
+- `ui.html` must stay one self-contained file with no remote assets.
+- `scratch/decisions.md` records the design decisions and why.
 - `Cover.jpg`, `Icon.jpg` and `image.jpg` are the Community listing assets, not used by the code.
 
-## Known issues
+## Not yet verified in Figma
 
-Reported by users on the listing:
+- Window placement at the bottom right, and what happens to it when the window resizes between screens.
+- Dark mode rendering.
+- That the clipboard write succeeds.
+- That `setPluginData` throws in a view-only file.
+- That Figma opens links whose name segment is percent-encoded non-ASCII.
 
-- "Node IDs are butchered" and the URLs "look nothing like the URLs I copy separately". The plugin emits `https://www.figma.com/file/<fileKey>/?node-id=<encodeURIComponent(node.id)>`, so `1:2` becomes `1%3A2`. Figma's own links use the `/design/<fileKey>/<file-name>?node-id=1-2` form (colon replaced by a hyphen).
-- "How do I select more than one?" The UI never explains multi-selection (Shift-click or drag-select on the canvas).
+## Known limits
 
-Found in the code:
-
-- `validateFigmaURL` only accepts `https://www.figma.com/(file|proto|design)/<key>/`. It rejects URLs without `www.`, without a trailing slash after the key, and FigJam (`/board/`) URLs. For a branch URL it captures the main file key, not the branch key.
-- The file key lives in a module variable, so the URL has to be pasted again on every run.
-- The success toast ("Copied N link(s)") fires in `code.ts` before the UI has attempted the copy, so it shows even when `execCommand('copy')` fails.
-- `show-copy-links` targets an element id (`copy-links-state`) that does not exist in `ui.html`; that state is never used.
-- The initial `showUI('enter-url')` is posted before the iframe has loaded; it only appears to work because that panel is visible by default in the markup.
-- Selection ordering walks every node on the page and does an `O(page nodes × selection)` comparison, which will be slow on large pages.
-- `console.log` debugging statements are left throughout both files.
+- A renamed file asks for its URL again.
+- In a view-only file that already has a stored key, Delete cannot remove it.
