@@ -6,8 +6,8 @@ type Screen = 'add-url' | 'copy' | 'settings';
 // measured height with a `resize` message.
 const SCREEN_SIZE: Record<Screen, { width: number; height: number }> = {
   'add-url': { width: 375, height: 100 },
-  copy: { width: 216, height: 72 },
-  settings: { width: 375, height: 145 },
+  copy: { width: 224, height: 72 },
+  settings: { width: 375, height: 139 },
 };
 
 const WINDOW_MARGIN = 16;
