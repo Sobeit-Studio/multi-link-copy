@@ -14,14 +14,17 @@
     --border: #d9d9d9;
     --divider: #e6e6e6;
     --primary: #2c2c2c;
+    --primary-hover: #1e1e1e;
     --primary-border: #2c2c2c;
     --on-primary: #f5f5f5;
     --disabled: #d9d9d9;
     --disabled-border: #b3b3b3;
     --on-disabled: #b3b3b3;
     --danger: #ec221f;
+    --danger-hover: #c00f0c;
     --danger-border: #900b09;
     --on-danger: #f5f5f5;
+    --subtle-hover: #f5f5f5;
     --error-text: #dc2626;
     --focus: var(--figma-color-border-selected, #0d99ff);
   }
@@ -35,14 +38,17 @@
     --border: var(--figma-color-border);
     --divider: var(--figma-color-border);
     --primary: var(--figma-color-bg-inverse);
+    --primary-hover: var(--figma-color-bg-inverse);
     --primary-border: var(--figma-color-bg-inverse);
     --on-primary: var(--figma-color-text-oninverse);
     --disabled: var(--figma-color-bg-disabled);
     --disabled-border: var(--figma-color-border-disabled);
     --on-disabled: var(--figma-color-text-disabled);
     --danger: var(--figma-color-bg-danger);
+    --danger-hover: var(--figma-color-bg-danger-hover);
     --danger-border: var(--figma-color-bg-danger);
     --on-danger: var(--figma-color-text-ondanger);
+    --subtle-hover: var(--figma-color-bg-hover);
     --error-text: var(--figma-color-text-danger);
   }
 
@@ -136,6 +142,12 @@
     background: var(--danger);
     color: var(--on-danger);
   }
+  /* Hover. Placed after the base, disabled and danger rules; the :not() filters keep
+     disabled and danger buttons out of the primary hover. Borders do not change. */
+  .btn:not(.btn-danger):not(:disabled):hover { background: var(--primary-hover); }
+  .btn-danger:not(:disabled):hover { background: var(--danger-hover); }
+  /* Figma has no hover variant of bg-inverse, so dark mode dims the primary button. */
+  .figma-dark .btn:not(.btn-danger):not(:disabled):hover { opacity: 0.9; }
 
   .icon-btn {
     display: flex;
@@ -153,6 +165,7 @@
     -webkit-appearance: none;
     appearance: none;
   }
+  .icon-btn:hover { background: var(--subtle-hover); }
 
   /* Settings back bar: 8px + 20px line + 7px + 1px divider = 36px, as in the design. */
   .back {
@@ -173,6 +186,7 @@
     -webkit-appearance: none;
     appearance: none;
   }
+  .back:hover { background: var(--subtle-hover); }
   .back:focus-visible { outline-offset: -2px; }
   .back .icon { color: var(--text-muted); }
 </style>
