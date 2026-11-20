@@ -1,0 +1,16 @@
+{
+  "name": "Multi-Link Copy",
+  "id": "1423324569458473026",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "capabilities": ["inspect"],
+  "enableProposedApi": false,
+  "documentAccess": "dynamic-page",
+  "editorType": ["figma", "dev"],
+  "networkAccess": {
+    "allowedDomains": [
+      "none"
+    ]
+  }
+}
