@@ -4,6 +4,18 @@ figma.showUI(__html__, { width: 300, height: 400 });
 // Define a persistent variable for fileKey
 let fileKey: string | null = null;
 
+// Recursive function to gather all selected nodes in order
+function getAllNodes(nodes: readonly SceneNode[]): SceneNode[] {
+  let allNodes: SceneNode[] = [];
+  nodes.forEach(node => {
+    allNodes.push(node);
+    if ('children' in node) {
+      allNodes = allNodes.concat(getAllNodes(node.children));
+    }
+  });
+  return allNodes;
+}
+
 // UI state management
 function showUI(state: string) {
   console.log(`Switching UI state to: ${state}`);  // Log the UI state change
@@ -56,18 +68,6 @@ figma.ui.onmessage = async (msg) => {
     if (selection.length === 0) {
       figma.notify('Please select at least one frame or component.');
     } else {
-      // Recursive function to gather all selected nodes in order
-      function getAllNodes(nodes: readonly SceneNode[]): SceneNode[] {
-        let allNodes: SceneNode[] = [];
-        nodes.forEach(node => {
-          allNodes.push(node);
-          if ('children' in node) {
-            allNodes = allNodes.concat(getAllNodes(node.children));
-          }
-        });
-        return allNodes;
-      }
-
       // Get all nodes in the current page in order, including nested nodes
       const allLayers = getAllNodes(figma.currentPage.children);
 
