@@ -26,7 +26,7 @@ export function parseFigmaUrl(url: string): { key: string } | null {
 // Runs of ASCII characters other than letters and digits become "-".
 // Non-ASCII characters (code units 0x80 and up) are kept, then percent-encoded.
 export function fileSlug(name: string): string {
-  const slug = name.replace(/[^A-Za-z0-9\u0080-￿]+/g, '-').replace(/^-+|-+$/g, '');
+  const slug = name.replace(/[^A-Za-z0-9\u0080-\uFFFF]+/g, '-').replace(/^-+|-+$/g, '');
   return encodeURIComponent(slug || 'Untitled');
 }
 

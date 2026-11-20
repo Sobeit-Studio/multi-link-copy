@@ -40,6 +40,7 @@ function loadFile(): string | null {
 function saveFile(key: string): void {
   try {
     figma.root.setPluginData(STORAGE_KEY, JSON.stringify({ key, name: figma.root.name }));
+    figma.commitUndo();
     sessionKey = null;
   } catch {
     sessionKey = key;
@@ -50,6 +51,7 @@ function clearFile(): void {
   sessionKey = null;
   try {
     figma.root.setPluginData(STORAGE_KEY, '');
+    figma.commitUndo();
   } catch {
     // View-only: nothing was stored in the document.
   }
@@ -195,6 +197,8 @@ figma.ui.onmessage = (msg: unknown) => {
       break;
 
     case 'resize': {
+      // Ignore a height measured on a screen that is no longer showing.
+      if (message.screen !== currentScreen) break;
       const height = message.height;
       if (typeof height === 'number' && Number.isFinite(height) && height > 0) {
         figma.ui.resize(SCREEN_SIZE[currentScreen].width, Math.ceil(height));

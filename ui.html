@@ -8,6 +8,7 @@
   :root {
     --surface: #ffffff;
     --text: #1e1e1e;
+    --text-strong: #0a0a0a;
     --text-muted: #737373;
     --text-placeholder: #b3b3b3;
     --border: #d9d9d9;
@@ -28,6 +29,7 @@
   .figma-dark {
     --surface: var(--figma-color-bg);
     --text: var(--figma-color-text);
+    --text-strong: var(--figma-color-text);
     --text-muted: var(--figma-color-text-secondary);
     --text-placeholder: var(--figma-color-text-tertiary);
     --border: var(--figma-color-border);
@@ -163,7 +165,7 @@
     border-bottom: 1px solid var(--divider);
     border-radius: 0;
     background: var(--surface);
-    color: var(--text);
+    color: var(--text-strong);
     font-size: 14px;
     line-height: 20px;
     text-align: left;
@@ -211,7 +213,7 @@
 </section>
 
 <section data-screen="settings" hidden>
-  <button class="back" id="back-btn" type="button"><span class="icon" aria-hidden="true"><svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <button class="back" id="back-btn" type="button" aria-label="Back to Copy Links"><span class="icon" aria-hidden="true"><svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g id="Icon / chevron-left">
 <path id="Vector" d="M8.44067 3.19067C8.61153 3.01982 8.88847 3.01982 9.05933 3.19067C9.23018 3.36153 9.23018 3.63847 9.05933 3.80933L5.86865 7L9.05933 10.1907C9.23018 10.3615 9.23018 10.6385 9.05933 10.8093C8.88847 10.9802 8.61153 10.9802 8.44067 10.8093L4.94067 7.30933C4.76982 7.13847 4.76982 6.86153 4.94067 6.69067L8.44067 3.19067Z" fill="currentColor"/>
 </g>
@@ -248,6 +250,7 @@
   const deleteBtn = document.getElementById('delete-btn');
 
   let current = null;
+  let currentName = null;
   let lastHeight = -1;
 
   const post = (msg) => parent.postMessage({ pluginMessage: msg }, '*');
@@ -258,7 +261,7 @@
     const height = Math.ceil(current.getBoundingClientRect().height);
     if (onlyIfChanged && height === lastHeight) return;
     lastHeight = height;
-    post({ type: 'resize', height });
+    post({ type: 'resize', screen: currentName, height });
   }
 
   function syncContinue() {
@@ -269,8 +272,13 @@
   function setError(visible) {
     if (urlError.hidden === !visible) return false;
     urlError.hidden = !visible;
-    if (visible) urlInput.setAttribute('aria-invalid', 'true');
-    else urlInput.removeAttribute('aria-invalid');
+    if (visible) {
+      urlInput.setAttribute('aria-invalid', 'true');
+      urlInput.setAttribute('aria-describedby', 'add-desc url-error');
+    } else {
+      urlInput.removeAttribute('aria-invalid');
+      urlInput.setAttribute('aria-describedby', 'add-desc');
+    }
     return true;
   }
 
@@ -284,6 +292,7 @@
       sections[name].hidden = sections[name] !== target;
     });
     current = target;
+    currentName = screen;
 
     if (screen === 'add-url') {
       urlInput.value = '';
@@ -303,6 +312,12 @@
 
   function showUrlInvalid() {
     const changed = setError(true);
+    if (!changed) {
+      // Hide and show again so role="alert" announces the repeated error.
+      urlError.hidden = true;
+      void urlError.offsetHeight;
+      urlError.hidden = false;
+    }
     urlInput.focus();
     if (changed && current === sections['add-url']) reportHeight(false);
   }

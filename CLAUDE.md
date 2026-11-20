@@ -46,7 +46,7 @@ The two runtimes talk only through `postMessage`.
 | UI → code | `open-settings` | | Show `settings`. |
 | UI → code | `close-settings` | | Show `copy`. |
 | UI → code | `delete-url` | | Clear the stored key and show `add-url`. |
-| UI → code | `resize` | `height` | Resize the window to the measured height. |
+| UI → code | `resize` | `screen`, `height` | Resize the window to the measured height. Code ignores it if `screen` is not the current screen. |
 | code → UI | `show` | `screen`, optional `fileUrl` | Show a screen. `fileUrl` is sent for `settings`. |
 | code → UI | `url-invalid` | | Show the invalid-URL error. |
 | code → UI | `write-clipboard` | `text`, `count` | UI writes `text` to the clipboard with a temporary textarea and `document.execCommand('copy')`. |
@@ -54,12 +54,12 @@ The two runtimes talk only through `postMessage`.
 Flow:
 
 - On start, code opens the window on `copy` if a key is stored, otherwise on `add-url`. Once the UI sends `ready`, code sends `show` for the same screen.
-- The file key is stored in document plugin data on `figma.root` under the key `file` as `{ key, name }`, where `name` is the file name at save time. When loading, a stored name that differs from the current file name counts as no key. This re-asks for the URL after a file is duplicated or renamed.
+- The file key is stored in document plugin data on `figma.root` under the key `file` as `{ key, name }`, where `name` is the file name at save time. After writing or clearing it the code calls `figma.commitUndo()`, so undo does not silently drop or restore the key. When loading, a stored name that differs from the current file name counts as no key. This re-asks for the URL after a file is duplicated or renamed.
 - If `setPluginData` throws (view-only file), the key is kept in memory for the session instead. Delete clears only the in-memory key and attempts to clear the stored one.
 - `copy` with an empty selection shows a notification and does nothing else. With no key it shows `add-url`.
 - Links are ordered by sorting the selected nodes by index path. Figma's `children` runs back to front, so each index is counted from the end to make the top layer 0. Nothing walks the whole page.
 - Code sends `write-clipboard`. The UI writes it and answers with `copy-result`. The "Copied N links" toast appears only when `ok` is true; otherwise an error toast appears.
-- The UI measures the height of the visible screen and sends `resize` after each `show` and when the window width changes. Code keeps the width from `SCREEN_SIZE` and applies the reported height. `SCREEN_SIZE` holds only the initial sizes.
+- The UI measures the height of the visible screen and sends `resize` after each `show`, when the URL error appears or clears, and when the window width changes. Code keeps the width from `SCREEN_SIZE` and applies the reported height. `SCREEN_SIZE` holds only the initial sizes.
 - The window opens at the bottom right of the viewport (`bottomRightPosition`, converted from screen pixels to canvas units by zoom).
 
 Link format: `https://www.figma.com/design/<key>/<slug>?node-id=<id>`, with `:` in the node id replaced by `-` and the rest URI-encoded. `parseFigmaUrl` accepts `figma.com` with or without `www.`, path type `file`, `design` or `proto`, and uses the branch key for branch URLs.
