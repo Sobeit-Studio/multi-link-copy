@@ -8,7 +8,7 @@ Multi-Link Copy is a Figma plugin (Community ID `1423324569458473026`). It runs 
 
 Listing: https://www.figma.com/community/plugin/1423324569458473026/multi-link-copy (the listing is JS-rendered and returns 403 to plain HTTP fetches; read it through a browser).
 
-Repository: https://github.com/Sobeit-Studio/multi-link-copy (private).
+Repository: https://github.com/Sobeit-Studio/multi-link-copy
 
 The published Community version is still Version 3 from October 3, 2024. This redesign is not published yet.
 
@@ -82,7 +82,7 @@ Why the URL step exists: `figma.fileKey` is only available to private plugins (`
 - All colours in `ui.html` are tokens in the `:root` block, with dark values under `.figma-dark`. No hex value may appear anywhere else in the file.
 - The three icons are inlined SVGs from the design, with colour set to `currentColor`.
 - `ui.html` must stay one self-contained file with no remote assets.
-- `scratch/decisions.md` records the design decisions and why.
+- `scratch/decisions.md` records the design decisions and why. It is local only (gitignored), so it may be missing on a fresh clone.
 - `Cover.jpg`, `Icon.jpg` and `image.jpg` are the Community listing assets, not used by the code.
 
 ## Not yet verified in Figma

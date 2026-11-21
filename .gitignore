@@ -10,3 +10,6 @@ code.js
 # Local tooling
 .mcp/
 .DS_Store
+
+# Working notes (local only)
+scratch/
