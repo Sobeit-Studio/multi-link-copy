@@ -1,16 +1,20 @@
-# Multi-Link Copy Plugin
+# Multi-Link Copy
 
-This plugin copies the links of selected frames or components in Figma to your clipboard.
+A Figma plugin that copies a link for each selected layer to your clipboard, one per line, in layer-panel order. Paste them into a spreadsheet or document.
 
-### How to Use:
+Install it from the Figma Community: https://www.figma.com/community/plugin/1423324569458473026/multi-link-copy
 
-1. Select the frames or components you wish to copy links for.
-2. Run the plugin, and it will copy the links to your clipboard, each on a new line.
-3. Paste the copied links directly into an Excel sheet or text file.
+## How to use
 
-### Installation:
+1. Run the plugin. The first time in a file, paste the file's link and click Continue. The plugin remembers it for that file.
+2. Select one or more layers on the canvas.
+3. Click Copy Links. The links are on your clipboard.
 
-1. Install [Node.js](https://nodejs.org/en/download/).
-2. In the terminal, navigate to the plugin directory and run:
-   ```bash
-   npm install
+The gear icon opens settings, where you can see the saved file link and delete it.
+
+## Development
+
+1. Install [Node.js](https://nodejs.org/en/download/), then run `npm install`.
+2. Run `npm run watch` to rebuild `code.js` on change.
+3. In the Figma desktop app, choose Plugins → Development → Import plugin from manifest and pick `manifest.json`.
+4. Run `npm test` for the unit tests.
