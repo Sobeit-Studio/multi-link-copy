@@ -8,7 +8,7 @@ Multi-Link Copy is a Figma plugin (Community ID `1423324569458473026`). It runs 
 
 Listing: https://www.figma.com/community/plugin/1423324569458473026/multi-link-copy (the listing is JS-rendered and returns 403 to plain HTTP fetches; read it through a browser).
 
-Repository: https://github.com/Sobeit-Studio/multi-link-copy
+Repository: https://github.com/juandel-12/multi-link-copy
 
 The published Community version is still Version 3 from October 3, 2024. This redesign is not published yet.
 
