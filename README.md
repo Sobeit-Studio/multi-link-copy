@@ -18,3 +18,7 @@ The gear icon opens settings, where you can see the saved file link and delete i
 2. Run `npm run watch` to rebuild `code.js` on change.
 3. In the Figma desktop app, choose Plugins → Development → Import plugin from manifest and pick `manifest.json`.
 4. Run `npm test` for the unit tests.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

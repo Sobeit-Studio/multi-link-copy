@@ -10,8 +10,8 @@
     "lint": "eslint --ext .ts src",
     "lint:fix": "eslint --ext .ts --fix src"
   },
-  "author": "",
-  "license": "",
+  "author": "Sebastian Delgadillo",
+  "license": "MIT",
   "devDependencies": {
     "@figma/eslint-plugin-figma-plugins": "*",
     "@figma/plugin-typings": "*",
